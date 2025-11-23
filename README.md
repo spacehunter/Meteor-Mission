@@ -17,7 +17,7 @@ Meteor Mission II was developed by Big Five Software, founded by Bill Hogue, one
 The game consists of three distinct phases:
 
 ### 1. Descent Phase
-Navigate your lander ship downward through a field of moving meteors. Use thrust to slow your descent and avoid collisions. Land safely on one of three landing pads at the bottom of the screen.
+Your lander slowly descends in freefall through a field of moving meteors. Use thrust to slow your descent (but not reverse it) and navigate around obstacles. Land safely on one of three landing pads at the bottom of the screen.
 
 ### 2. Rescue Phase
 Once landed, a stranded astronaut will run towards your ship and board. Wait for the rescue to complete before taking off.
@@ -161,6 +161,7 @@ Requires ES6 modules and Web Audio API support.
 
 | Version | Changes |
 |---------|---------|
+| 2.1.0 | Gameplay improvements: slower descent physics, meteor safe zone near mothership, UI repositioned to corners |
 | 2.0.0 | Modular ES6 architecture refactor |
 | 1.0.0 | Initial release - single-file implementation |
 

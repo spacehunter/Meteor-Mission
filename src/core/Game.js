@@ -314,6 +314,10 @@ export class Game {
         // Thrust
         if (inputSystem.isPressed('up') && gameState.get('fuel') > 0) {
             this.lander.applyThrust();
+            // Cap velocity so ship can only slow descent, never ascend
+            if (this.lander.velocity.y > 0) {
+                this.lander.velocity.y = 0;
+            }
             gameState.consumeFuel(Config.FUEL_CONSUMPTION_RATE * deltaTime);
             this.lander.setThrusterVisible(true);
             if (Math.random() < 0.3) audioSystem.play('thrust');

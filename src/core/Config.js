@@ -20,13 +20,13 @@ export const Config = {
     FUEL_REFILL_ON_LAND: 50,
 
     // Physics
-    GRAVITY: -0.015,
-    THRUST: 0.04,
+    GRAVITY: -0.002,
+    THRUST: 0.005,
     HORIZONTAL_SPEED: 0.3,
-    DESCENT_SPEED: -0.08,
+    DESCENT_SPEED: -0.005,
     ASCENT_SPEED: 0.1,
     BULLET_SPEED: 0.8,
-    MAX_DESCENT_SPEED: -0.3,
+    MAX_DESCENT_SPEED: -0.06,
 
     // Scoring
     SCORE_LANDING: 100,

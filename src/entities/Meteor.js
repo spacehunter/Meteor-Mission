@@ -47,11 +47,14 @@ export class Meteor extends Entity {
      * Randomize meteor position and velocity
      */
     randomize() {
-        const yRange = Config.GAME_HEIGHT - 15;
+        // Safe zone at top (15 units from mothership) for player to start
+        const topSafeZone = 15;
+        const bottomMargin = 8;
+        const yRange = Config.GAME_HEIGHT - topSafeZone - bottomMargin;
 
         this.mesh.position.set(
             (Math.random() - 0.5) * (Config.GAME_WIDTH - 4),
-            -Config.GAME_HEIGHT / 2 + 8 + Math.random() * yRange,
+            -Config.GAME_HEIGHT / 2 + bottomMargin + Math.random() * yRange,
             (Math.random() - 0.5) * 4
         );
 
@@ -156,8 +159,8 @@ export class Meteor extends Entity {
             this.velocity.x *= -1;
         }
 
-        // Wrap vertically
-        const topBound = Config.GAME_HEIGHT / 2 - 5;
+        // Wrap vertically (keep meteors out of safe zone near mothership)
+        const topBound = Config.GAME_HEIGHT / 2 - 15;
         const bottomBound = -Config.GAME_HEIGHT / 2 + 5;
 
         if (this.mesh.position.y < bottomBound) {
