@@ -1,0 +1,230 @@
+/**
+ * Meteor Mission - Styles
+ * Retro green terminal aesthetic
+ */
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base */
+body {
+    overflow: hidden;
+    background: #000;
+    font-family: 'Courier New', monospace;
+    color: #0f0;
+}
+
+/* Game Container */
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+canvas {
+    display: block;
+}
+
+/* UI Overlay */
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* UI Panels */
+.ui-panel {
+    background: rgba(0, 20, 0, 0.7);
+    border: 2px solid #0f0;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+#score-panel {
+    font-size: 24px;
+}
+
+#lives-panel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+}
+
+.life-icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background: #0f0;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+#astronauts-rescued {
+    font-size: 18px;
+}
+
+/* Phase Indicator */
+#phase-indicator {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    text-align: center;
+}
+
+/* Fuel Bar */
+#fuel-bar-container {
+    width: 150px;
+    height: 20px;
+    border: 2px solid #0f0;
+    background: #020;
+    margin-top: 5px;
+}
+
+#fuel-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f00, #ff0, #0f0);
+    width: 100%;
+    transition: width 0.1s;
+}
+
+/* Message Overlay */
+#message-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 200;
+    pointer-events: auto;
+}
+
+#message-overlay h1 {
+    font-size: 48px;
+    color: #0f0;
+    text-shadow: 0 0 20px #0f0;
+    margin-bottom: 20px;
+}
+
+#message-overlay h2 {
+    font-size: 32px;
+    color: #0f0;
+    margin-bottom: 30px;
+}
+
+#message-overlay p {
+    font-size: 18px;
+    color: #0a0;
+    margin-bottom: 10px;
+}
+
+/* Story Box */
+#message-overlay .story {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #0f0;
+    background: rgba(0, 20, 0, 0.8);
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Buttons */
+#start-btn,
+#restart-btn {
+    margin-top: 30px;
+    padding: 15px 40px;
+    font-size: 24px;
+    background: #020;
+    color: #0f0;
+    border: 3px solid #0f0;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s;
+}
+
+#start-btn:hover,
+#restart-btn:hover {
+    background: #0f0;
+    color: #000;
+    box-shadow: 0 0 30px #0f0;
+}
+
+#start-btn:active,
+#restart-btn:active {
+    transform: scale(0.98);
+}
+
+/* Controls Help */
+#controls-help {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: #0a0;
+    pointer-events: none;
+    z-index: 100;
+    text-align: center;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #message-overlay h1 {
+        font-size: 32px;
+    }
+
+    #message-overlay h2 {
+        font-size: 24px;
+    }
+
+    #message-overlay .story {
+        max-width: 90%;
+        font-size: 12px;
+    }
+
+    #score-panel {
+        font-size: 18px;
+    }
+
+    .ui-panel {
+        padding: 8px 12px;
+    }
+
+    #start-btn,
+    #restart-btn {
+        padding: 12px 30px;
+        font-size: 20px;
+    }
+}
+
+/* Animation for title */
+@keyframes glow {
+    0%, 100% {
+        text-shadow: 0 0 20px #0f0;
+    }
+    50% {
+        text-shadow: 0 0 40px #0f0, 0 0 60px #0f0;
+    }
+}
+
+#message-overlay h1 {
+    animation: glow 2s ease-in-out infinite;
+}

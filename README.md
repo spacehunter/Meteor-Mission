@@ -61,9 +61,56 @@ The game uses Three.js loaded from a CDN, so an internet connection is required 
 ## Technical Details
 
 - Built with **Three.js** for 3D graphics
-- Pure JavaScript with no build dependencies
+- Pure JavaScript ES6 modules with no build dependencies
 - Web Audio API for retro-style sound effects
 - Responsive design that adapts to window size
+
+## Project Structure
+
+```
+Meteor-Mission/
+├── index.html              # Entry point
+├── css/
+│   └── styles.css          # Game styles
+└── src/
+    ├── main.js             # Application bootstrap
+    ├── core/
+    │   ├── Config.js       # Game configuration constants
+    │   ├── Game.js         # Main game orchestrator
+    │   ├── GameState.js    # State management with observers
+    │   └── index.js        # Core module exports
+    ├── entities/
+    │   ├── Entity.js       # Base entity class
+    │   ├── Lander.js       # Player ship
+    │   ├── Meteor.js       # Obstacles (transform to Flagship)
+    │   ├── Astronaut.js    # Rescue targets
+    │   ├── Bullet.js       # Projectiles
+    │   ├── Mothership.js   # Docking station
+    │   ├── LandingPad.js   # Landing platforms
+    │   ├── Explosion.js    # Particle effects
+    │   └── index.js        # Entity module exports
+    ├── systems/
+    │   ├── AudioSystem.js  # Sound effects (Web Audio API)
+    │   ├── InputSystem.js  # Keyboard input handling
+    │   ├── SceneManager.js # Three.js scene management
+    │   ├── CollisionSystem.js # Collision detection
+    │   ├── UIManager.js    # DOM UI updates
+    │   └── index.js        # Systems module exports
+    └── utils/              # Utility functions (future use)
+```
+
+## Architecture
+
+The game follows a modular architecture with separation of concerns:
+
+- **Core**: Configuration, game state management, and main game loop
+- **Entities**: Game objects with their own update logic and 3D meshes
+- **Systems**: Reusable systems for audio, input, rendering, collisions, and UI
+
+Key design patterns used:
+- **Observer Pattern**: GameState notifies listeners on state changes
+- **Entity-Component**: Base Entity class with specialized subclasses
+- **Singleton**: System instances (audio, input) shared across the application
 
 ## Historical Context
 
