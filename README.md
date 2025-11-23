@@ -112,6 +112,58 @@ Key design patterns used:
 - **Entity-Component**: Base Entity class with specialized subclasses
 - **Singleton**: System instances (audio, input) shared across the application
 
+## Development
+
+### Adding New Entities
+
+1. Create a new class in `src/entities/` extending `Entity`
+2. Implement `createMesh()` and `update(deltaTime)` methods
+3. Export from `src/entities/index.js`
+4. Instantiate in `src/core/Game.js`
+
+### Modifying Game Settings
+
+All game constants are centralized in `src/core/Config.js`:
+
+```javascript
+// Example: Adjust difficulty
+Config.METEOR_COUNT = 30;      // More meteors
+Config.FUEL_MAX = 150;         // More fuel
+Config.INITIAL_LIVES = 5;      // More lives
+```
+
+### Running Locally
+
+Due to ES6 module restrictions, you need a local server:
+
+```bash
+# Using Python
+python -m http.server 8000
+
+# Using Node.js
+npx serve .
+
+# Then open http://localhost:8000
+```
+
+## Browser Compatibility
+
+| Browser | Support |
+|---------|---------|
+| Chrome 89+ | Full |
+| Firefox 89+ | Full |
+| Safari 15+ | Full |
+| Edge 89+ | Full |
+
+Requires ES6 modules and Web Audio API support.
+
+## Version History
+
+| Version | Changes |
+|---------|---------|
+| 2.0.0 | Modular ES6 architecture refactor |
+| 1.0.0 | Initial release - single-file implementation |
+
 ## Historical Context
 
 Big Five Software was one of the most successful TRS-80 game publishers of the early 1980s. Founded by Bill Hogue, the company was known for its high-quality arcade-style games that pushed the limits of the TRS-80 hardware.
