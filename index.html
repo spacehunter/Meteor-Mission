@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteor Mission - A Big Five Software Classic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+            color: #0f0;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .ui-panel {
+            background: rgba(0, 20, 0, 0.7);
+            border: 2px solid #0f0;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        #score-panel {
+            font-size: 24px;
+        }
+
+        #lives-panel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+        }
+
+        .life-icon {
+            width: 20px;
+            height: 20px;
+            background: #0f0;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        #phase-indicator {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            text-align: center;
+        }
+
+        #message-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        #message-overlay h1 {
+            font-size: 48px;
+            color: #0f0;
+            text-shadow: 0 0 20px #0f0;
+            margin-bottom: 20px;
+        }
+
+        #message-overlay h2 {
+            font-size: 32px;
+            color: #0f0;
+            margin-bottom: 30px;
+        }
+
+        #message-overlay p {
+            font-size: 18px;
+            color: #0a0;
+            margin-bottom: 10px;
+        }
+
+        #message-overlay .story {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #0f0;
+            background: rgba(0, 20, 0, 0.8);
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #start-btn, #restart-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #020;
+            color: #0f0;
+            border: 3px solid #0f0;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        #start-btn:hover, #restart-btn:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 30px #0f0;
+        }
+
+        #controls-help {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #0a0;
+            pointer-events: none;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #fuel-bar-container {
+            width: 150px;
+            height: 20px;
+            border: 2px solid #0f0;
+            background: #020;
+        }
+
+        #fuel-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #f00, #ff0, #0f0);
+            width: 100%;
+            transition: width 0.1s;
+        }
+
+        #astronauts-rescued {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-overlay">
+            <div class="ui-panel" id="score-panel">
+                SCORE: <span id="score">0</span>
+            </div>
+            <div class="ui-panel" id="astronauts-rescued">
+                RESCUED: <span id="rescued-count">0</span>
+            </div>
+            <div class="ui-panel" id="lives-panel">
+                LIVES: <span id="lives-display"></span>
+            </div>
+        </div>
+
+        <div class="ui-panel" id="phase-indicator">
+            <span id="phase-text">DESCENT PHASE</span><br>
+            <div id="fuel-bar-container">
+                <div id="fuel-bar"></div>
+            </div>
+            FUEL
+        </div>
+
+        <div id="message-overlay">
+            <h1>METEOR MISSION</h1>
+            <h2>A Big Five Software Classic</h2>
+            <div class="story">
+                <p><strong>THE SECOND BIG BANG HAS OCCURRED!</strong></p>
+                <p>The galaxy is now full of stray meteors. Brave astronauts are stranded on the planet surface below.</p>
+                <p>Your mission: Navigate your rescue lander through the treacherous meteor field, land on one of the platforms, rescue the astronauts, and return safely to the mothership!</p>
+                <p><strong>BEWARE:</strong> Some meteors transform into the dreaded Flagship - worth bonus points but deadly to touch!</p>
+            </div>
+            <p><strong>CONTROLS:</strong></p>
+            <p>LEFT/RIGHT ARROWS or A/D - Move horizontally</p>
+            <p>UP ARROW or W - Thrust (slow descent / speed ascent)</p>
+            <p>SPACE - Fire (during ascent phase)</p>
+            <button id="start-btn">START MISSION</button>
+        </div>
+
+        <div id="controls-help" class="hidden">
+            [LEFT/RIGHT] Move | [UP] Thrust | [SPACE] Fire (Ascent)
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Game Constants
+        const GAME_WIDTH = 40;
+        const GAME_HEIGHT = 60;
+        const METEOR_COUNT = 25;
+        const LANDING_PADS = 3;
+        const INITIAL_LIVES = 3;
+        const FUEL_MAX = 100;
+        const FUEL_CONSUMPTION_RATE = 15;
+        const FUEL_REFILL_ON_LAND = 50;
+
+        // Game State
+        let gameState = {
+            phase: 'title', // title, descent, landed, ascent, gameover
+            score: 0,
+            lives: INITIAL_LIVES,
+            astronautsRescued: 0,
+            fuel: FUEL_MAX,
+            hasAstronaut: false,
+            level: 1
+        };
+
+        // Three.js Setup
+        let scene, camera, renderer;
+        let lander, mothership;
+        let meteors = [];
+        let landingPads = [];
+        let bullets = [];
+        let astronaut = null;
+        let flagship = null;
+        let stars = [];
+        let explosionParticles = [];
+
+        // Input State
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            space: false
+        };
+
+        // Physics
+        let landerVelocity = { x: 0, y: 0 };
+        const GRAVITY = -0.015;
+        const THRUST = 0.04;
+        const HORIZONTAL_SPEED = 0.3;
+        const DESCENT_SPEED = -0.08;
+        const ASCENT_SPEED = 0.1;
+        const BULLET_SPEED = 0.8;
+
+        // Audio Context
+        let audioContext;
+
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            if (!audioContext) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            switch(type) {
+                case 'thrust':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialDecayTo && gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.1);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                case 'shoot':
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                case 'explosion':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.3);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    break;
+                case 'pickup':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    break;
+                case 'dock':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    break;
+                case 'land':
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    break;
+            }
+        }
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000510);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 50);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(10, 20, 10);
+            scene.add(directionalLight);
+
+            // Create starfield
+            createStarfield();
+
+            // Create game objects
+            createMothership();
+            createLandingPads();
+            createMeteors();
+            createLander();
+
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.getElementById('start-btn').addEventListener('click', startGame);
+
+            // Start render loop
+            animate();
+        }
+
+        function createStarfield() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starCount = 500;
+            const positions = new Float32Array(starCount * 3);
+            const colors = new Float32Array(starCount * 3);
+
+            for (let i = 0; i < starCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 100;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+                positions[i * 3 + 2] = -20 - Math.random() * 30;
+
+                const brightness = 0.5 + Math.random() * 0.5;
+                colors[i * 3] = brightness;
+                colors[i * 3 + 1] = brightness;
+                colors[i * 3 + 2] = brightness;
+            }
+
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const starMaterial = new THREE.PointsMaterial({
+                size: 0.2,
+                vertexColors: true,
+                transparent: true
+            });
+
+            const starField = new THREE.Points(starGeometry, starMaterial);
+            scene.add(starField);
+        }
+
+        function createMothership() {
+            const mothershipGroup = new THREE.Group();
+
+            // Main body
+            const bodyGeometry = new THREE.CylinderGeometry(3, 4, 2, 16);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0x4444ff,
+                emissive: 0x111144,
+                shininess: 100
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.x = Math.PI / 2;
+            mothershipGroup.add(body);
+
+            // Dome
+            const domeGeometry = new THREE.SphereGeometry(2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const domeMaterial = new THREE.MeshPhongMaterial({
+                color: 0x88ccff,
+                emissive: 0x224466,
+                transparent: true,
+                opacity: 0.8
+            });
+            const dome = new THREE.Mesh(domeGeometry, domeMaterial);
+            dome.position.y = 0;
+            dome.rotation.x = -Math.PI / 2;
+            mothershipGroup.add(dome);
+
+            // Docking bay indicator
+            const dockingGeometry = new THREE.RingGeometry(0.5, 1, 16);
+            const dockingMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                side: THREE.DoubleSide
+            });
+            const dockingBay = new THREE.Mesh(dockingGeometry, dockingMaterial);
+            dockingBay.position.z = 1.1;
+            dockingBay.name = 'dockingBay';
+            mothershipGroup.add(dockingBay);
+
+            // Engine glow
+            const engineGeometry = new THREE.CylinderGeometry(1.5, 2, 0.5, 16);
+            const engineMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00aaff,
+                transparent: true,
+                opacity: 0.6
+            });
+            const engine = new THREE.Mesh(engineGeometry, engineMaterial);
+            engine.rotation.x = Math.PI / 2;
+            engine.position.z = -1.2;
+            mothershipGroup.add(engine);
+
+            mothershipGroup.position.set(0, GAME_HEIGHT / 2 - 3, 0);
+            mothership = mothershipGroup;
+            scene.add(mothership);
+        }
+
+        function createLandingPads() {
+            landingPads = [];
+            const padSpacing = GAME_WIDTH / (LANDING_PADS + 1);
+
+            for (let i = 0; i < LANDING_PADS; i++) {
+                const padGroup = new THREE.Group();
+
+                // Platform
+                const platformGeometry = new THREE.BoxGeometry(4, 0.5, 2);
+                const platformMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x888888,
+                    emissive: 0x222222
+                });
+                const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+                padGroup.add(platform);
+
+                // Landing lights
+                const lightGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+                const lightMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+                for (let j = -1; j <= 1; j++) {
+                    const light = new THREE.Mesh(lightGeometry, lightMaterial.clone());
+                    light.position.set(j * 1.5, 0.35, 0);
+                    light.name = 'landingLight';
+                    padGroup.add(light);
+                }
+
+                // Support legs
+                const legGeometry = new THREE.CylinderGeometry(0.1, 0.2, 2, 8);
+                const legMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
+
+                for (let j = -1; j <= 1; j += 2) {
+                    const leg = new THREE.Mesh(legGeometry, legMaterial);
+                    leg.position.set(j * 1.5, -1.2, 0);
+                    padGroup.add(leg);
+                }
+
+                const xPos = -GAME_WIDTH / 2 + padSpacing * (i + 1);
+                padGroup.position.set(xPos, -GAME_HEIGHT / 2 + 2, 0);
+
+                landingPads.push({
+                    mesh: padGroup,
+                    x: xPos,
+                    width: 4
+                });
+
+                scene.add(padGroup);
+            }
+
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(GAME_WIDTH + 10, 3);
+            const groundMaterial = new THREE.MeshPhongMaterial({
+                color: 0x553311,
+                emissive: 0x221100
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.position.set(0, -GAME_HEIGHT / 2 - 0.5, 0);
+            scene.add(ground);
+        }
+
+        function createMeteors() {
+            meteors.forEach(m => scene.remove(m.mesh));
+            meteors = [];
+
+            const meteorGeometries = [
+                new THREE.IcosahedronGeometry(1, 0),
+                new THREE.DodecahedronGeometry(0.8, 0),
+                new THREE.OctahedronGeometry(0.9, 0)
+            ];
+
+            const meteorMaterial = new THREE.MeshPhongMaterial({
+                color: 0x888888,
+                emissive: 0x222222,
+                flatShading: true
+            });
+
+            const meteorCount = METEOR_COUNT + gameState.level * 3;
+
+            for (let i = 0; i < meteorCount; i++) {
+                const geometry = meteorGeometries[Math.floor(Math.random() * meteorGeometries.length)];
+                const meteor = new THREE.Mesh(geometry.clone(), meteorMaterial.clone());
+
+                const scale = 0.5 + Math.random() * 1;
+                meteor.scale.set(scale, scale, scale);
+
+                const yRange = GAME_HEIGHT - 15;
+                meteor.position.set(
+                    (Math.random() - 0.5) * (GAME_WIDTH - 4),
+                    -GAME_HEIGHT / 2 + 8 + Math.random() * yRange,
+                    (Math.random() - 0.5) * 4
+                );
+
+                meteor.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+
+                const meteorData = {
+                    mesh: meteor,
+                    velocity: {
+                        x: (Math.random() - 0.5) * 0.1 * (1 + gameState.level * 0.1),
+                        y: (Math.random() - 0.5) * 0.05
+                    },
+                    rotation: {
+                        x: (Math.random() - 0.5) * 0.02,
+                        y: (Math.random() - 0.5) * 0.02,
+                        z: (Math.random() - 0.5) * 0.02
+                    },
+                    isFlagship: false,
+                    flashTimer: 0,
+                    willBecomeFlagship: Math.random() < 0.05 // 5% chance
+                };
+
+                meteors.push(meteorData);
+                scene.add(meteor);
+            }
+        }
+
+        function createLander() {
+            if (lander) {
+                scene.remove(lander);
+            }
+
+            const landerGroup = new THREE.Group();
+
+            // Main body
+            const bodyGeometry = new THREE.ConeGeometry(0.8, 2, 8);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00ff00,
+                emissive: 0x004400
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.x = Math.PI;
+            landerGroup.add(body);
+
+            // Cockpit
+            const cockpitGeometry = new THREE.SphereGeometry(0.5, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cockpitMaterial = new THREE.MeshPhongMaterial({
+                color: 0x88ffff,
+                emissive: 0x224444,
+                transparent: true,
+                opacity: 0.7
+            });
+            const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
+            cockpit.position.y = 1;
+            cockpit.rotation.x = Math.PI;
+            landerGroup.add(cockpit);
+
+            // Landing legs
+            const legGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+            const legMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
+
+            for (let i = 0; i < 3; i++) {
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                const angle = (i / 3) * Math.PI * 2;
+                leg.position.set(Math.cos(angle) * 0.6, -1.2, Math.sin(angle) * 0.6);
+                leg.rotation.z = Math.cos(angle) * 0.3;
+                leg.rotation.x = Math.sin(angle) * 0.3;
+                landerGroup.add(leg);
+
+                // Foot
+                const footGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+                const foot = new THREE.Mesh(footGeometry, legMaterial);
+                foot.position.set(
+                    Math.cos(angle) * 0.8,
+                    -1.6,
+                    Math.sin(angle) * 0.8
+                );
+                landerGroup.add(foot);
+            }
+
+            // Thruster
+            const thrusterGeometry = new THREE.ConeGeometry(0.3, 1, 8);
+            const thrusterMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff6600,
+                transparent: true,
+                opacity: 0
+            });
+            const thruster = new THREE.Mesh(thrusterGeometry, thrusterMaterial);
+            thruster.position.y = -1.8;
+            thruster.name = 'thruster';
+            landerGroup.add(thruster);
+
+            lander = landerGroup;
+            resetLanderPosition();
+            scene.add(lander);
+        }
+
+        function resetLanderPosition() {
+            lander.position.set(0, GAME_HEIGHT / 2 - 6, 0);
+            landerVelocity = { x: 0, y: DESCENT_SPEED };
+            gameState.fuel = FUEL_MAX;
+        }
+
+        function createAstronaut(padX) {
+            if (astronaut) {
+                scene.remove(astronaut);
+            }
+
+            const astronautGroup = new THREE.Group();
+
+            // Body
+            const bodyGeometry = new THREE.CapsuleGeometry(0.2, 0.4, 4, 8);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                emissive: 0x444444
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            astronautGroup.add(body);
+
+            // Helmet
+            const helmetGeometry = new THREE.SphereGeometry(0.25, 8, 8);
+            const helmetMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffcc00,
+                emissive: 0x664400,
+                transparent: true,
+                opacity: 0.8
+            });
+            const helmet = new THREE.Mesh(helmetGeometry, helmetMaterial);
+            helmet.position.y = 0.45;
+            astronautGroup.add(helmet);
+
+            astronautGroup.position.set(
+                padX - 3,
+                -GAME_HEIGHT / 2 + 2.5,
+                0
+            );
+
+            astronaut = {
+                mesh: astronautGroup,
+                targetX: padX,
+                state: 'running', // running, boarding, aboard
+                speed: 0.05
+            };
+
+            scene.add(astronautGroup);
+        }
+
+        function createFlagship(meteorData) {
+            scene.remove(meteorData.mesh);
+
+            const flagshipGroup = new THREE.Group();
+
+            // Classic alien/flagship shape
+            const bodyGeometry = new THREE.TorusGeometry(1, 0.3, 8, 16);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff00ff,
+                emissive: 0x440044
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.x = Math.PI / 2;
+            flagshipGroup.add(body);
+
+            // Dome
+            const domeGeometry = new THREE.SphereGeometry(0.6, 16, 8);
+            const domeMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff88ff,
+                emissive: 0x442244,
+                transparent: true,
+                opacity: 0.8
+            });
+            const dome = new THREE.Mesh(domeGeometry, domeMaterial);
+            flagshipGroup.add(dome);
+
+            // Eyes
+            const eyeGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+            const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.25, 0.2, 0.5);
+            flagshipGroup.add(leftEye);
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.25, 0.2, 0.5);
+            flagshipGroup.add(rightEye);
+
+            flagshipGroup.position.copy(meteorData.mesh.position);
+
+            meteorData.mesh = flagshipGroup;
+            meteorData.isFlagship = true;
+            meteorData.velocity.x *= 2;
+            meteorData.points = 500;
+
+            scene.add(flagshipGroup);
+        }
+
+        function createExplosion(position) {
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const geometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.2, 4, 4);
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(Math.random() * 0.1 + 0.05, 1, 0.5),
+                    transparent: true
+                });
+                const particle = new THREE.Mesh(geometry, material);
+
+                particle.position.copy(position);
+
+                const particleData = {
+                    mesh: particle,
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.5,
+                        (Math.random() - 0.5) * 0.5,
+                        (Math.random() - 0.5) * 0.5
+                    ),
+                    life: 1
+                };
+
+                explosionParticles.push(particleData);
+                scene.add(particle);
+            }
+        }
+
+        function createBullet() {
+            if (bullets.length >= 3) return; // Max 3 bullets
+
+            const bulletGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8);
+            const bulletMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffff00,
+                emissive: 0x888800
+            });
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+
+            bullet.position.copy(lander.position);
+            bullet.position.y += 1.5;
+
+            bullets.push({
+                mesh: bullet,
+                velocity: BULLET_SPEED
+            });
+
+            scene.add(bullet);
+            playSound('shoot');
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('message-overlay').classList.add('hidden');
+            document.getElementById('controls-help').classList.remove('hidden');
+
+            gameState = {
+                phase: 'descent',
+                score: 0,
+                lives: INITIAL_LIVES,
+                astronautsRescued: 0,
+                fuel: FUEL_MAX,
+                hasAstronaut: false,
+                level: 1
+            };
+
+            createMeteors();
+            createLander();
+            updateUI();
+        }
+
+        function gameOver() {
+            gameState.phase = 'gameover';
+
+            const overlay = document.getElementById('message-overlay');
+            overlay.innerHTML = `
+                <h1>GAME OVER</h1>
+                <h2>Final Score: ${gameState.score}</h2>
+                <p>Astronauts Rescued: ${gameState.astronautsRescued}</p>
+                <p>Level Reached: ${gameState.level}</p>
+                <button id="restart-btn">PLAY AGAIN</button>
+            `;
+            overlay.classList.remove('hidden');
+            document.getElementById('controls-help').classList.add('hidden');
+
+            document.getElementById('restart-btn').addEventListener('click', startGame);
+        }
+
+        function loseLife() {
+            playSound('explosion');
+            createExplosion(lander.position.clone());
+
+            gameState.lives--;
+
+            if (gameState.lives <= 0) {
+                gameOver();
+            } else {
+                // Reset for next attempt
+                setTimeout(() => {
+                    gameState.phase = 'descent';
+                    gameState.hasAstronaut = false;
+                    resetLanderPosition();
+                    if (astronaut) {
+                        scene.remove(astronaut.mesh);
+                        astronaut = null;
+                    }
+                }, 1000);
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('rescued-count').textContent = gameState.astronautsRescued;
+
+            // Update lives display
+            const livesDisplay = document.getElementById('lives-display');
+            livesDisplay.innerHTML = '';
+            for (let i = 0; i < gameState.lives; i++) {
+                const lifeIcon = document.createElement('span');
+                lifeIcon.className = 'life-icon';
+                livesDisplay.appendChild(lifeIcon);
+            }
+
+            // Update phase indicator
+            const phaseText = document.getElementById('phase-text');
+            switch (gameState.phase) {
+                case 'descent':
+                    phaseText.textContent = 'DESCENT PHASE';
+                    break;
+                case 'landed':
+                    phaseText.textContent = 'RESCUE IN PROGRESS';
+                    break;
+                case 'ascent':
+                    phaseText.textContent = 'ASCENT PHASE - FIRE TO BOOST!';
+                    break;
+            }
+
+            // Update fuel bar
+            const fuelBar = document.getElementById('fuel-bar');
+            fuelBar.style.width = `${(gameState.fuel / FUEL_MAX) * 100}%`;
+        }
+
+        function checkCollisions() {
+            if (!lander || gameState.phase === 'landed' || gameState.phase === 'gameover' || gameState.phase === 'title') {
+                return;
+            }
+
+            const landerPos = lander.position;
+            const landerRadius = 1;
+
+            // Check meteor collisions
+            for (const meteor of meteors) {
+                const meteorPos = meteor.mesh.position;
+                const meteorRadius = meteor.mesh.scale.x * (meteor.isFlagship ? 1.2 : 1);
+
+                const distance = landerPos.distanceTo(meteorPos);
+
+                if (distance < landerRadius + meteorRadius) {
+                    loseLife();
+                    return;
+                }
+            }
+
+            // Check bullet-meteor collisions
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+
+                for (let j = meteors.length - 1; j >= 0; j--) {
+                    const meteor = meteors[j];
+                    const distance = bullet.mesh.position.distanceTo(meteor.mesh.position);
+
+                    if (distance < meteor.mesh.scale.x + 0.3) {
+                        // Hit!
+                        createExplosion(meteor.mesh.position.clone());
+                        playSound('explosion');
+
+                        const points = meteor.isFlagship ? 500 : 50;
+                        gameState.score += points;
+
+                        scene.remove(bullet.mesh);
+                        scene.remove(meteor.mesh);
+                        bullets.splice(i, 1);
+                        meteors.splice(j, 1);
+
+                        updateUI();
+                        break;
+                    }
+                }
+            }
+
+            // Check boundary collisions
+            if (landerPos.x < -GAME_WIDTH / 2 + 1 || landerPos.x > GAME_WIDTH / 2 - 1) {
+                loseLife();
+                return;
+            }
+
+            // Check ground collision (outside landing pads)
+            if (landerPos.y < -GAME_HEIGHT / 2 + 3) {
+                let onPad = false;
+
+                for (const pad of landingPads) {
+                    if (Math.abs(landerPos.x - pad.x) < pad.width / 2 - 0.5) {
+                        onPad = true;
+
+                        if (gameState.phase === 'descent') {
+                            // Successful landing!
+                            playSound('land');
+                            gameState.phase = 'landed';
+                            lander.position.y = -GAME_HEIGHT / 2 + 3.5;
+                            landerVelocity = { x: 0, y: 0 };
+                            gameState.fuel = Math.min(FUEL_MAX, gameState.fuel + FUEL_REFILL_ON_LAND);
+                            gameState.score += 100;
+
+                            // Create astronaut
+                            createAstronaut(pad.x);
+                            updateUI();
+                        }
+                        break;
+                    }
+                }
+
+                if (!onPad && gameState.phase === 'descent') {
+                    loseLife();
+                }
+            }
+
+            // Check mothership docking
+            if (gameState.phase === 'ascent' && landerPos.y > GAME_HEIGHT / 2 - 6) {
+                if (Math.abs(landerPos.x) < 2) {
+                    // Successful docking!
+                    playSound('dock');
+
+                    if (gameState.hasAstronaut) {
+                        gameState.astronautsRescued++;
+                        gameState.score += 200;
+                        gameState.hasAstronaut = false;
+                    }
+
+                    // Check for level up
+                    if (gameState.astronautsRescued > 0 && gameState.astronautsRescued % 5 === 0) {
+                        gameState.level++;
+                        createMeteors(); // Add more meteors
+                    }
+
+                    // Reset for next descent
+                    gameState.phase = 'descent';
+                    resetLanderPosition();
+                    updateUI();
+                }
+            }
+        }
+
+        function updateLander(deltaTime) {
+            if (!lander || gameState.phase === 'gameover' || gameState.phase === 'title') {
+                return;
+            }
+
+            const thruster = lander.getObjectByName('thruster');
+
+            if (gameState.phase === 'descent') {
+                // Apply gravity
+                landerVelocity.y += GRAVITY;
+
+                // Horizontal movement
+                if (keys.left) {
+                    lander.position.x -= HORIZONTAL_SPEED;
+                    lander.rotation.z = 0.2;
+                } else if (keys.right) {
+                    lander.position.x += HORIZONTAL_SPEED;
+                    lander.rotation.z = -0.2;
+                } else {
+                    lander.rotation.z *= 0.9;
+                }
+
+                // Thrust (slow descent)
+                if (keys.up && gameState.fuel > 0) {
+                    landerVelocity.y += THRUST;
+                    gameState.fuel -= FUEL_CONSUMPTION_RATE * deltaTime;
+                    thruster.material.opacity = 0.8;
+                    if (Math.random() < 0.3) playSound('thrust');
+                } else {
+                    thruster.material.opacity = 0;
+                }
+
+                // Limit descent speed
+                landerVelocity.y = Math.max(landerVelocity.y, -0.3);
+
+            } else if (gameState.phase === 'ascent') {
+                // Base ascent speed
+                landerVelocity.y = ASCENT_SPEED;
+
+                // Horizontal movement
+                if (keys.left) {
+                    lander.position.x -= HORIZONTAL_SPEED * 0.7;
+                    lander.rotation.z = 0.2;
+                } else if (keys.right) {
+                    lander.position.x += HORIZONTAL_SPEED * 0.7;
+                    lander.rotation.z = -0.2;
+                } else {
+                    lander.rotation.z *= 0.9;
+                }
+
+                // Fire/boost
+                if (keys.space) {
+                    landerVelocity.y = ASCENT_SPEED * 1.5;
+                    thruster.material.opacity = 0.8;
+                } else if (keys.up && gameState.fuel > 0) {
+                    landerVelocity.y = ASCENT_SPEED * 1.3;
+                    gameState.fuel -= FUEL_CONSUMPTION_RATE * deltaTime * 0.5;
+                    thruster.material.opacity = 0.6;
+                } else {
+                    thruster.material.opacity = 0.4;
+                }
+            }
+
+            // Apply velocity
+            lander.position.x += landerVelocity.x;
+            lander.position.y += landerVelocity.y;
+
+            // Clamp position
+            lander.position.x = Math.max(-GAME_WIDTH / 2 + 1, Math.min(GAME_WIDTH / 2 - 1, lander.position.x));
+
+            updateUI();
+        }
+
+        function updateMeteors() {
+            if (gameState.phase === 'title' || gameState.phase === 'gameover') return;
+
+            for (const meteor of meteors) {
+                // Move meteor
+                meteor.mesh.position.x += meteor.velocity.x;
+                meteor.mesh.position.y += meteor.velocity.y;
+
+                // Rotate
+                meteor.mesh.rotation.x += meteor.rotation.x;
+                meteor.mesh.rotation.y += meteor.rotation.y;
+                meteor.mesh.rotation.z += meteor.rotation.z;
+
+                // Bounce off edges
+                if (meteor.mesh.position.x < -GAME_WIDTH / 2 + 2 || meteor.mesh.position.x > GAME_WIDTH / 2 - 2) {
+                    meteor.velocity.x *= -1;
+                }
+
+                // Wrap vertically
+                if (meteor.mesh.position.y < -GAME_HEIGHT / 2 + 5) {
+                    meteor.mesh.position.y = GAME_HEIGHT / 2 - 8;
+                } else if (meteor.mesh.position.y > GAME_HEIGHT / 2 - 5) {
+                    meteor.mesh.position.y = -GAME_HEIGHT / 2 + 8;
+                }
+
+                // Flagship transformation
+                if (meteor.willBecomeFlagship && !meteor.isFlagship) {
+                    meteor.flashTimer += 0.05;
+
+                    if (meteor.flashTimer > 3) {
+                        createFlagship(meteor);
+                    } else if (meteor.flashTimer > 0) {
+                        // Flash effect
+                        const flash = Math.sin(meteor.flashTimer * 10) > 0;
+                        meteor.mesh.material.emissive.setHex(flash ? 0xff00ff : 0x222222);
+                    }
+                }
+
+                // Flagship movement pattern
+                if (meteor.isFlagship) {
+                    meteor.mesh.rotation.z += 0.05;
+                }
+            }
+        }
+
+        function updateAstronaut() {
+            if (!astronaut || gameState.phase !== 'landed') return;
+
+            if (astronaut.state === 'running') {
+                // Move towards lander
+                const direction = Math.sign(astronaut.targetX - astronaut.mesh.position.x);
+                astronaut.mesh.position.x += direction * astronaut.speed;
+
+                // Simple walking animation
+                astronaut.mesh.rotation.z = Math.sin(Date.now() * 0.01) * 0.2;
+
+                // Check if reached lander
+                if (Math.abs(astronaut.mesh.position.x - lander.position.x) < 0.5) {
+                    astronaut.state = 'boarding';
+                    playSound('pickup');
+                }
+            } else if (astronaut.state === 'boarding') {
+                // Move up into lander
+                astronaut.mesh.position.y += 0.05;
+                astronaut.mesh.scale.multiplyScalar(0.95);
+
+                if (astronaut.mesh.scale.x < 0.1) {
+                    // Astronaut aboard!
+                    scene.remove(astronaut.mesh);
+                    astronaut = null;
+                    gameState.hasAstronaut = true;
+                    gameState.phase = 'ascent';
+                    landerVelocity.y = ASCENT_SPEED;
+                    updateUI();
+                }
+            }
+        }
+
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.mesh.position.y += bullet.velocity;
+
+                // Remove if off screen
+                if (bullet.mesh.position.y > GAME_HEIGHT / 2) {
+                    scene.remove(bullet.mesh);
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        function updateExplosions() {
+            for (let i = explosionParticles.length - 1; i >= 0; i--) {
+                const particle = explosionParticles[i];
+
+                particle.mesh.position.add(particle.velocity);
+                particle.velocity.multiplyScalar(0.95);
+                particle.life -= 0.02;
+                particle.mesh.material.opacity = particle.life;
+                particle.mesh.scale.multiplyScalar(0.98);
+
+                if (particle.life <= 0) {
+                    scene.remove(particle.mesh);
+                    explosionParticles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateLandingPadLights() {
+            const time = Date.now() * 0.003;
+
+            for (const pad of landingPads) {
+                pad.mesh.traverse((child) => {
+                    if (child.name === 'landingLight') {
+                        const brightness = (Math.sin(time + child.position.x) + 1) / 2;
+                        child.material.color.setRGB(0, brightness, 0);
+                    }
+                });
+            }
+        }
+
+        function updateMothership() {
+            if (!mothership) return;
+
+            // Gentle bob
+            mothership.position.y = GAME_HEIGHT / 2 - 3 + Math.sin(Date.now() * 0.001) * 0.5;
+
+            // Docking bay pulse
+            const dockingBay = mothership.getObjectByName('dockingBay');
+            if (dockingBay) {
+                const pulse = (Math.sin(Date.now() * 0.005) + 1) / 2;
+                dockingBay.material.color.setRGB(0, pulse, 0);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    keys.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    keys.right = true;
+                    break;
+                case 'ArrowUp':
+                case 'KeyW':
+                    keys.up = true;
+                    break;
+                case 'Space':
+                    if (!keys.space && gameState.phase === 'ascent') {
+                        createBullet();
+                    }
+                    keys.space = true;
+                    event.preventDefault();
+                    break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    keys.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    keys.right = false;
+                    break;
+                case 'ArrowUp':
+                case 'KeyW':
+                    keys.up = false;
+                    break;
+                case 'Space':
+                    keys.space = false;
+                    break;
+            }
+        }
+
+        let lastTime = 0;
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            const deltaTime = (currentTime - lastTime) / 1000 || 0.016;
+            lastTime = currentTime;
+
+            // Update game objects
+            updateLander(deltaTime);
+            updateMeteors();
+            updateAstronaut();
+            updateBullets();
+            updateExplosions();
+            updateLandingPadLights();
+            updateMothership();
+
+            // Check collisions
+            checkCollisions();
+
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        // Initialize the game
+        init();
+    </script>
+</body>
+</html>
